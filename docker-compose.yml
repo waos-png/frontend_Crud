@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -13,7 +13,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent || exit 1" ]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -28,15 +28,13 @@ services:
     image: clara-backend:latest
     container_name: clara-backend
     restart: unless-stopped
-    ports:
-      - "8080:8080"
     environment:
       SERVER_PORT: 8080
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/clara?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: clara
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
-      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL:-false}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL}
     depends_on:
       db:
         condition: service_healthy
@@ -50,12 +48,29 @@ services:
     image: clara-frontend:latest
     container_name: clara-frontend
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://backend:8080
       NODE_ENV: production
+      # Si tu frontend es Next.js, el "API URL" público debería ser el dominio (via nginx),
+      # no el nombre interno del contenedor.
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     depends_on:
+      - backend
+    networks:
+      - clara-net
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: clara-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Certificados (si ya los tienes). Si no usas TLS aún, puedes omitir 443 y estas líneas.
+      - ./deploy/certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
       - backend
     networks:
       - clara-net
