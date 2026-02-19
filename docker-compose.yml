@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   db:
     image: mysql:8.0
@@ -23,7 +21,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ../backend
       dockerfile: Dockerfile
     image: clara-backend:latest
     container_name: clara-backend
@@ -43,7 +41,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
       dockerfile: Dockerfile
     image: clara-frontend:latest
     container_name: clara-frontend
