@@ -1,4 +1,6 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const envBase = process.env.NEXT_PUBLIC_API_URL;
+// If NEXT_PUBLIC_API_URL is not set, use the current origin (works in browser) or localhost fallback during SSR/CLI.
+export const API_BASE = envBase || (typeof window !== "undefined" ? window.location.origin : "http://localhost:8080");
 
 export async function fetchUsuarios() {
   const res = await fetch(`${API_BASE}/usuarios`);
