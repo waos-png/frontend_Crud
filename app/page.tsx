@@ -2,9 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import { fetchUsuarios, crearUsuario, fetchPerfiles, crearPerfil } from "../lib/api";
+import Header from "../components/Header";
+import UserForm from "../components/UserForm";
+import UserList from "../components/UserList";
+import ProfileForm from "../components/ProfileForm";
+import ProfileList from "../components/ProfileList";
 
-type Usuario = { id: number; nombre: string; email: string };
-type Perfil = { id: number; nombre: string; descripcion?: string };
+type Usuario = { id: number; nombre: string; correo: string; edad?: number };
+type Perfil = { id: number; bio?: string; avatarUrl?: string; fechaNacimiento?: string };
 
 export default function Home() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -13,10 +18,12 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const [nuevoNombre, setNuevoNombre] = useState("");
-  const [nuevoEmail, setNuevoEmail] = useState("");
+  const [nuevoCorreo, setNuevoCorreo] = useState("");
+  const [nuevoEdad, setNuevoEdad] = useState<number | "">("");
 
-  const [nuevoPerfilNombre, setNuevoPerfilNombre] = useState("");
-  const [nuevoPerfilDescripcion, setNuevoPerfilDescripcion] = useState("");
+  const [nuevoPerfilBio, setNuevoPerfilBio] = useState("");
+  const [nuevoPerfilAvatarUrl, setNuevoPerfilAvatarUrl] = useState("");
+  const [nuevoPerfilFechaNacimiento, setNuevoPerfilFechaNacimiento] = useState("");
 
   async function cargarDatos() {
     try {
@@ -39,10 +46,13 @@ export default function Home() {
   async function handleCrearUsuario(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const nuevo = await crearUsuario({ nombre: nuevoNombre, email: nuevoEmail });
+      const payload: any = { nombre: nuevoNombre, correo: nuevoCorreo };
+      if (nuevoEdad !== "") payload.edad = Number(nuevoEdad);
+      const nuevo = await crearUsuario(payload);
       setUsuarios((s) => [nuevo, ...s]);
       setNuevoNombre("");
-      setNuevoEmail("");
+      setNuevoCorreo("");
+      setNuevoEdad("");
     } catch (e: any) {
       setError(e.message ?? "Error al crear usuario");
     }
@@ -51,10 +61,11 @@ export default function Home() {
   async function handleCrearPerfil(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const nuevo = await crearPerfil({ nombre: nuevoPerfilNombre, descripcion: nuevoPerfilDescripcion });
+      const nuevo = await crearPerfil({ bio: nuevoPerfilBio, avatarUrl: nuevoPerfilAvatarUrl, fechaNacimiento: nuevoPerfilFechaNacimiento });
       setPerfiles((s) => [nuevo, ...s]);
-      setNuevoPerfilNombre("");
-      setNuevoPerfilDescripcion("");
+      setNuevoPerfilBio("");
+      setNuevoPerfilAvatarUrl("");
+      setNuevoPerfilFechaNacimiento("");
     } catch (e: any) {
       setError(e.message ?? "Error al crear perfil");
     }
@@ -62,13 +73,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-zinc-50 p-6 md:p-12 font-sans">
-      <header className="max-w-6xl mx-auto mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Clara Admin</h1>
-          <p className="text-sm text-zinc-600 mt-1">Interfaz ligera para gestionar usuarios y perfiles</p>
-        </div>
-        <div className="text-sm text-zinc-500">API: motivated-patience-production-2422.up.railway.app</div>
-      </header>
+      <Header />
 
       <main className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3">
         <section className="md:col-span-2 bg-white p-6 rounded-lg shadow-sm">
@@ -77,47 +82,20 @@ export default function Home() {
             <div className="text-sm text-zinc-500">{loading ? 'Cargando...' : usuarios.length + ' usuarios'}</div>
           </div>
 
-          <form onSubmit={handleCrearUsuario} className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-            <input value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} placeholder="Nombre" className="border p-3 rounded-md focus:ring-2 focus:ring-blue-300" />
-            <input value={nuevoEmail} onChange={(e) => setNuevoEmail(e.target.value)} placeholder="Email" className="border p-3 rounded-md focus:ring-2 focus:ring-blue-300" />
-            <button className="rounded-md bg-blue-600 text-white px-4 py-3 hover:bg-blue-700 transition">Crear usuario</button>
-          </form>
+          <UserForm nombre={nuevoNombre} correo={nuevoCorreo} edad={nuevoEdad} setNombre={setNuevoNombre} setCorreo={setNuevoCorreo} setEdad={setNuevoEdad} onSubmit={handleCrearUsuario} />
 
           <div className="grid gap-3">
-            {usuarios.length === 0 && !loading && <div className="text-sm text-zinc-500">No hay usuarios</div>}
-            {usuarios.map((u) => (
-              <div key={u.id} className="flex items-center gap-4 p-3 border rounded-md hover:shadow transition">
-                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold">{u.nombre ? u.nombre.charAt(0).toUpperCase() : '?'}</div>
-                <div className="flex-1">
-                  <div className="font-medium">{u.nombre}</div>
-                  <div className="text-sm text-zinc-500">{u.email}</div>
-                </div>
-                <div className="text-sm text-zinc-500">ID {u.id}</div>
-              </div>
-            ))}
+            <UserList usuarios={usuarios} loading={loading} />
           </div>
         </section>
 
         <aside className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-3">Perfiles</h3>
 
-          <form onSubmit={handleCrearPerfil} className="flex flex-col gap-3 mb-4">
-            <input value={nuevoPerfilNombre} onChange={(e) => setNuevoPerfilNombre(e.target.value)} placeholder="Nombre perfil" className="border p-2 rounded-md focus:ring-2 focus:ring-green-300" />
-            <input value={nuevoPerfilDescripcion} onChange={(e) => setNuevoPerfilDescripcion(e.target.value)} placeholder="Descripción (opcional)" className="border p-2 rounded-md focus:ring-2 focus:ring-green-300" />
-            <button className="rounded-md bg-green-600 text-white px-3 py-2 hover:bg-green-700 transition">Crear perfil</button>
-          </form>
+          <ProfileForm bio={nuevoPerfilBio} avatarUrl={nuevoPerfilAvatarUrl} fechaNacimiento={nuevoPerfilFechaNacimiento} setBio={setNuevoPerfilBio} setAvatarUrl={setNuevoPerfilAvatarUrl} setFechaNacimiento={setNuevoPerfilFechaNacimiento} onSubmit={handleCrearPerfil} />
 
           <div className="space-y-3">
-            {perfiles.length === 0 && !loading && <div className="text-sm text-zinc-500">No hay perfiles</div>}
-            {perfiles.map((p) => (
-              <div key={p.id} className="border p-3 rounded-md">
-                <div className="flex items-center justify-between">
-                  <div className="font-medium">{p.nombre}</div>
-                  <div className="text-xs text-zinc-500">ID {p.id}</div>
-                </div>
-                {p.descripcion && <div className="text-sm text-zinc-600 mt-1">{p.descripcion}</div>}
-              </div>
-            ))}
+            <ProfileList perfiles={perfiles} loading={loading} />
           </div>
         </aside>
       </main>
